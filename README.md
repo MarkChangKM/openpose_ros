@@ -4,7 +4,7 @@ Example ROS catkin package that utilizes the OpenPose library from https://githu
 
 ## System
 Tested on:
-* Ubuntu 14.04 / Ubuntu 16.04
+* Ubuntu 14.04 / Ubuntu 16.04 / Ubuntu 20.04
 * ROS Indigo / Kinetic
 * CUDA 8.0 / CUDA 10.0 / CUDA 10.1
 * cuDNN 5.1 / cuDNN 6.0 / cuDNN 7.2.4 / cuDNN 7.5.0
