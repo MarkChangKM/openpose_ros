@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 2.8.7)
 project(openpose_ros)
 
 ## Add support for C++11, supported in ROS Kinetic and newer
-add_definitions(-std=c++11)
+add_definitions(-std=c++14)
 
 find_package(catkin REQUIRED COMPONENTS
   roscpp
@@ -16,11 +16,13 @@ find_package(catkin REQUIRED COMPONENTS
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
-# find_package(CUDA REQUIRED) # Uncomment this line if you have trouble compiling
+find_package(CUDA REQUIRED) # Uncomment this line if you have trouble compiling
 find_package(OpenCV REQUIRED)
+find_package(PCL REQUIRED)
 find_package(GFlags)
 find_package(Glog)
 find_package(OpenPose REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 catkin_package(
    INCLUDE_DIRS include
@@ -36,9 +38,12 @@ include_directories(
   ${GFLAGS_INCLUDE_DIR} 
   ${GLOG_INCLUDE_DIR} 
   ${OpenCV_INCLUDE_DIRS}
+  ${PCL_INCLUDE_DIRS}
+  ${EIGEN3_INCLUDE_DIR}
 )
 
-add_executable(${PROJECT_NAME}_node src/openpose_ros_node.cpp src/openpose.cpp src/openpose_ros_io.cpp 
+# 2D - src/openpose_ros_io.cpp 
+add_executable(${PROJECT_NAME}_node src/openpose_ros_node.cpp src/openpose.cpp src/openpose_ros_3d_io.cpp 
                                     src/openpose_flags.cpp)
 
 add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
@@ -48,5 +53,6 @@ target_link_libraries(${PROJECT_NAME}_node
   ${OpenCV_LIBS}
   ${OpenPose_LIBS} 
   ${GFLAGS_LIBRARY} 
-  ${GLOG_LIBRARY} 
+  ${GLOG_LIBRARY}
+  ${PCL_LIBRARIES} 
 )

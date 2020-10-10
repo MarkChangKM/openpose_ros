@@ -45,6 +45,8 @@ DECLARE_int32(hand_detector);
 DECLARE_string(hand_net_resolution);
 DECLARE_int32(hand_scale_number);
 DECLARE_double(hand_scale_range);
+// OpenPose Depth Keypoint Superimpose
+DECLARE_bool(depth);
 // OpenPose 3-D Reconstruction
 DECLARE_bool(3d);
 DECLARE_int32(3d_min_views);

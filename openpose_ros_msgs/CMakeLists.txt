@@ -19,6 +19,10 @@ add_message_files(
   OpenPoseHuman.msg
   OpenPoseHumanList.msg
   PointWithProb.msg
+  OpenPoseHuman3D.msg
+  OpenPoseHumanList3D.msg
+  PointWithProb3D.msg
+
 )
 
 generate_messages(

@@ -4,7 +4,7 @@
 // Note: This command will show you flags for other unnecessary 3rdparty files. Check only the flags for the OpenPose
 // executable. E.g., for `openpose.bin`, look for `Flags from examples/openpose/openpose.cpp:`.
 // Debugging/Other
-DEFINE_int32(logging_level,             3,              "The logging level. Integer in the range [0, 255]. 0 will output any opLog() message,"
+DEFINE_int32(logging_level,             255,              "The logging level. Integer in the range [0, 255]. 0 will output any opLog() message,"
                                                         " while 255 will not output any. Current OpenPose library messages are in the range 0-4:"
                                                         " 1 for low priority messages and 4 for important ones.");
 DEFINE_bool(disable_multi_thread,       false,          "It would slightly reduce the frame rate in order to highly reduce the lag. Mainly useful"
@@ -15,7 +15,7 @@ DEFINE_int32(profile_speed,             1000,           "If PROFILER_ENABLED was
                                                         " runtime statistics at this frame number.");
 #ifndef OPENPOSE_FLAGS_DISABLE_POSE
 // OpenPose
-DEFINE_string(model_folder,             "/path/to/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
+DEFINE_string(model_folder,             "/home/rbccps/Anush/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
 DEFINE_string(prototxt_path,            "",             "The combination `--model_folder` + `--prototxt_path` represents the whole path to the"
                                                         " prototxt file. If empty, it will use the default OpenPose ProtoTxt file.");
 DEFINE_string(caffemodel_path,          "",             "The combination `--model_folder` + `--caffemodel_path` represents the whole path to the"
@@ -100,7 +100,7 @@ DEFINE_string(face_net_resolution,      "368x368",      "Multiples of 16 and squ
                                                         " detector. 320x320 usually works fine while giving a substantial speed up when multiple"
                                                         " faces on the image.");
 // OpenPose Hand
-DEFINE_bool(hand,                       false,          "Enables hand keypoint detection. It will share some parameters from the body pose, e.g."
+DEFINE_bool(hand,                       true,          "Enables hand keypoint detection. It will share some parameters from the body pose, e.g."
                                                         " `model_folder`. Analogously to `--face`, it will also slow down the performance, increase"
                                                         " the required GPU memory and its speed depends on the number of people.");
 DEFINE_int32(hand_detector,             0,              "Kind of hand rectangle detector. Analogous to `--face_detector`.");
@@ -111,6 +111,10 @@ DEFINE_int32(hand_scale_number,         1,              "Analogous to `scale_num
 DEFINE_double(hand_scale_range,         0.4,            "Analogous purpose than `scale_gap` but applied to the hand keypoint detector. Total range"
                                                         " between smallest and biggest scale. The scales will be centered in ratio 1. E.g., if"
                                                         " scaleRange = 0.4 and scalesNumber = 2, then there will be 2 scales, 0.8 and 1.2.");
+
+// OpenPose Depth Keypoint Superimpose
+DEFINE_bool(depth,                       true,          "Enables keypoint super-imposition on a depth image, provide the depth image topic in the launch file." );
+
 // OpenPose 3-D Reconstruction
 DEFINE_bool(3d,                         false,          "Running OpenPose 3-D reconstruction demo: 1) Reading from a stereo camera system."
                                                         " 2) Performing 3-D reconstruction from the multiple views. 3) Displaying 3-D reconstruction"
