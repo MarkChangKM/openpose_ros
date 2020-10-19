@@ -4,11 +4,11 @@ Example ROS catkin package that utilizes the OpenPose library from https://githu
 
 ## System
 Tested on:
-* Ubuntu 20.04
-* ROS Noetic
-* OpenCV 4.2
-* CUDA 10.2
-* cudnn 7.6.5
+* Ubuntu 18.04
+* ROS melodic
+* OpenCV 4.5
+* CUDA 10.0
+* cudnn 7.5.0
 * Openpose GPU Version
 
 ## Installation Steps
@@ -38,11 +38,7 @@ Tested on:
 ```bash
 source catkin_workspace/devel/setup.bash
 ```
-2. run with 2d or 3d or realsence
-2d:
-```bash
-roslaunch openpose_ros openpose_ros.launch
-```
+2. run with rosbag or realsence
 3d:
 ```bash
 roslaunch openpose_ros openpose_ros_3d.launch
@@ -51,3 +47,7 @@ realsence:
 ```bash
 roslaunch openpose_ros openpose_ros_with_rs.launch
 ```
+
+## TODO
+1. filter depth image(filling nan point)
+2. filter blocked point(estimate keypoint that has been blocked by other body part)

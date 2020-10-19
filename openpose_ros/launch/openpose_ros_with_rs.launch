@@ -1,0 +1,23 @@
+<launch>
+  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+	<arg name="align_depth"				 value="true"/>
+  </include>
+  
+  <!-- Start openpose_ros -->
+  <node pkg="openpose_ros" type="openpose_ros_node" name="openpose_ros_node" output="screen"> <!-- launch-prefix="valgrind" -->
+    <param name="image_topic"                value="/camera/color/image_raw" />
+    <param name="depth_topic"                value="/camera/aligned_depth_to_color/image_raw" />
+    <param name="pointcloud_topic"           value="/camera/depth_registered/points" />
+    <param name="input_image_transport_type" value="raw" />
+    <param name="output_topic"               value="/openpose_ros/human_list" />
+    <param name="display_output"             value="true" />
+    <param name="print_keypoints"            value="false" />
+    <param name="save_original_video"        value="false" />
+    <param name="save_openpose_video"        value="false" />
+    <param name="original_video_file_name"   value="original_video_output.avi" />
+    <param name="openpose_video_file_name"   value="openpose_video_output.avi" />
+    <param name="video_fps"                  value="20" />
+  </node>
+
+  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find openpose_ros)/openpose_3d.rviz" />
+</launch>
