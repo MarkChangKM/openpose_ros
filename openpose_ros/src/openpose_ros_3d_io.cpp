@@ -44,7 +44,7 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 
 	VIS_body = true;
 	VIS_face = false;
-	VIS_right = false;
+	VIS_right = true;
 	VIS_left = true;
 
 	//Default params is according to RS-D415
@@ -337,9 +337,9 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		// Markers will be spheres
 		marker.type = visualization_msgs::Marker::SPHERE_LIST;
 		marker.action = visualization_msgs::Marker::ADD;
-		marker.scale.x = 0.05;
-		marker.scale.y = 0.05;
-		marker.scale.z = 0.05;
+		marker.scale.x = 0.005;
+		marker.scale.y = 0.005;
+		marker.scale.z = 0.005;
 		// Joints are red
 		marker.color.a = 1.0;
 		marker.color.r = 1.0;
@@ -357,9 +357,9 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		skeleton.header.stamp = ros::Time();
 		// Skeleton will be lines
 		skeleton.type = visualization_msgs::Marker::LINE_LIST;
-		skeleton.scale.x = 0.03;
-		skeleton.scale.y = 0.03;
-		skeleton.scale.z = 0.03;
+		skeleton.scale.x = 0.005;
+		skeleton.scale.y = 0.005;
+		skeleton.scale.z = 0.005;
 		// Skeleton is blue
 		skeleton.color.a = 1.0;
 		skeleton.color.r = 0.0;
@@ -372,9 +372,9 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 		hand_skeleton.header.stamp = ros::Time();
 		// Skeleton will be lines
 		hand_skeleton.type = visualization_msgs::Marker::LINE_LIST;
-		hand_skeleton.scale.x = 0.03;
-		hand_skeleton.scale.y = 0.03;
-		hand_skeleton.scale.z = 0.03;
+		hand_skeleton.scale.x = 0.005;
+		hand_skeleton.scale.y = 0.005;
+		hand_skeleton.scale.z = 0.005;
 		// Skeleton is blue
 		hand_skeleton.color.a = 1.0;
 		hand_skeleton.color.r = 0.0;

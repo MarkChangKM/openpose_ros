@@ -15,7 +15,7 @@ DEFINE_int32(profile_speed,             1000,           "If PROFILER_ENABLED was
                                                         " runtime statistics at this frame number.");
 #ifndef OPENPOSE_FLAGS_DISABLE_POSE
 // OpenPose
-DEFINE_string(model_folder,             "/home/rbccps/Anush/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
+DEFINE_string(model_folder,             "/home/lab-ubuntu/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
 DEFINE_string(prototxt_path,            "",             "The combination `--model_folder` + `--prototxt_path` represents the whole path to the"
                                                         " prototxt file. If empty, it will use the default OpenPose ProtoTxt file.");
 DEFINE_string(caffemodel_path,          "",             "The combination `--model_folder` + `--caffemodel_path` represents the whole path to the"
@@ -33,7 +33,7 @@ DEFINE_int32(keypoint_scale,            0,              "Scaling of the (x,y) co
                                                         " corner of the image, and (1,1) the bottom-right one; and 4 for range [-1,1], where"
                                                         " (-1,-1) would be the top-left corner of the image, and (1,1) the bottom-right one. Non"
                                                         " related with `scale_number` and `scale_gap`.");
-DEFINE_int32(number_people_max,         -1,             "This parameter will limit the maximum number of people detected, by keeping the people with"
+DEFINE_int32(number_people_max,         1,             "This parameter will limit the maximum number of people detected, by keeping the people with"
                                                         " top scores. The score is based in person area over the image, body part score, as well as"
                                                         " joint score (between each pair of connected body parts). Useful if you know the exact"
                                                         " number of people in the scene, so it can remove false positives (if all the people have"
@@ -52,7 +52,7 @@ DEFINE_int32(body,                      1,              "Select 0 to disable bod
 DEFINE_string(model_pose,               "BODY_25",      "Model to be used. E.g., `BODY_25` (fastest for CUDA version, most accurate, and includes"
                                                         " foot keypoints), `COCO` (18 keypoints), `MPI` (15 keypoints, least accurate model but"
                                                         " fastest on CPU), `MPI_4_layers` (15 keypoints, even faster but less accurate).");
-DEFINE_string(net_resolution,           "-1x368",       "Multiples of 16. If it is increased, the accuracy potentially increases. If it is"
+DEFINE_string(net_resolution,           "240x128",       "Multiples of 16. If it is increased, the accuracy potentially increases. If it is"
                                                         " decreased, the speed increases. For maximum speed-accuracy balance, it should keep the"
                                                         " closest aspect ratio possible to the images or videos to be processed. Using `-1` in"
                                                         " any of the dimensions, OP will choose the optimal aspect ratio depending on the user's"
@@ -96,7 +96,7 @@ DEFINE_int32(face_detector,             0,              "Kind of face rectangle 
                                                         " detection for webcam (if the frame rate is high enough, i.e., >7 FPS per GPU) and video."
                                                         " This is not person ID tracking, it simply looks for hands in positions at which hands were"
                                                         " located in previous frames, but it does not guarantee the same person ID among frames.");
-DEFINE_string(face_net_resolution,      "368x368",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the face keypoint"
+DEFINE_string(face_net_resolution,      "160x160",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the face keypoint"
                                                         " detector. 320x320 usually works fine while giving a substantial speed up when multiple"
                                                         " faces on the image.");
 // OpenPose Hand
@@ -104,9 +104,9 @@ DEFINE_bool(hand,                       true,          "Enables hand keypoint de
                                                         " `model_folder`. Analogously to `--face`, it will also slow down the performance, increase"
                                                         " the required GPU memory and its speed depends on the number of people.");
 DEFINE_int32(hand_detector,             0,              "Kind of hand rectangle detector. Analogous to `--face_detector`.");
-DEFINE_string(hand_net_resolution,      "368x368",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the hand keypoint"
+DEFINE_string(hand_net_resolution,      "208x208",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the hand keypoint"
                                                         " detector.");
-DEFINE_int32(hand_scale_number,         1,              "Analogous to `scale_number` but applied to the hand keypoint detector. Our best results"
+DEFINE_int32(hand_scale_number,         2,              "Analogous to `scale_number` but applied to the hand keypoint detector. Our best results"
                                                         " were found with `hand_scale_number` = 6 and `hand_scale_range` = 0.4.");
 DEFINE_double(hand_scale_range,         0.4,            "Analogous purpose than `scale_gap` but applied to the hand keypoint detector. Total range"
                                                         " between smallest and biggest scale. The scales will be centered in ratio 1. E.g., if"
