@@ -70,7 +70,7 @@ namespace openpose_ros {
             bool openpose_video_writer_initialized_;
             cv::VideoWriter openpose_video_writer_;
 
-			bool VIS_right, VIS_left, VIS_face, VIS_body;
+			bool VIS_right, VIS_left, VIS_face, VIS_body, imgsync;
 
             int video_fps_;
 

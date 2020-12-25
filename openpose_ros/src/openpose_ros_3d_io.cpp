@@ -47,6 +47,8 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 	VIS_right = true;
 	VIS_left = true;
 
+    imgsync = true;
+
 	//Default params is according to RS-D415
 	fx = 608.007;
 	fy = 608.007;	
@@ -83,6 +85,7 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 
 void OpenPoseROSIO::processImage(const sensor_msgs::ImageConstPtr& msg)
 {
+    imgsync = true;
     convertImage(msg);
     std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> datumToProcess = createDatum();
 
@@ -92,6 +95,15 @@ void OpenPoseROSIO::processImage(const sensor_msgs::ImageConstPtr& msg)
     std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> datumProcessed;
     if (successfullyEmplaced && openpose_->waitAndPop(datumProcessed))
     {
+	    if(FLAGS_depth)
+	    {
+            publish3D(datumProcessed);
+	    }  
+	    else
+	    {
+            publish(datumProcessed);
+	    }
+        imgsync = false;
         if(display_output_flag_)
         {
             display(datumProcessed);
@@ -108,14 +120,6 @@ void OpenPoseROSIO::processImage(const sensor_msgs::ImageConstPtr& msg)
         {
             saveOpenPoseVideo(datumProcessed);
         }
-	if(FLAGS_depth)
-	{
-            publish3D(datumProcessed);
-	}
-	else
-	{
-            publish(datumProcessed);
-	}	
     }
     else
     {
@@ -140,15 +144,18 @@ void OpenPoseROSIO::convertImage(const sensor_msgs::ImageConstPtr& msg)
 
 void OpenPoseROSIO::convertDepth(const sensor_msgs::ImageConstPtr& msg)
 {
-    try
+    if(!imgsync)
     {
-        cv_depth_ptr_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1); //TYPE_32FC1
-        depth_header_ = msg->header;
-    }
-    catch (cv_bridge::Exception& e)
-    {
-        ROS_ERROR("cv_bridge exception: %s", e.what());
-        return;
+        try
+        {
+            cv_depth_ptr_ = cv_bridge::toCvCopy(msg, sensor_msgs::image_encodings::TYPE_32FC1); //TYPE_32FC1
+            depth_header_ = msg->header;
+        }
+        catch (cv_bridge::Exception& e)
+        {
+            ROS_ERROR("cv_bridge exception: %s", e.what());
+            return;
+        }
     }
 }
 
@@ -159,7 +166,6 @@ void OpenPoseROSIO::get_CamInfo(const sensor_msgs::CameraInfo& msg)
 	cx = msg.K[2];
 	cy = msg.K[5];
 }
-
 
 std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>> OpenPoseROSIO::createDatum()
 {
@@ -310,6 +316,7 @@ void OpenPoseROSIO::printKeypoints(const std::shared_ptr<std::vector<std::shared
 bool OpenPoseROSIO::PointISValid(const openpose_ros_msgs::PointWithProb3D& bodypart)
 {
   if (std::isnan(bodypart.z) || std::isinf(bodypart.z) || std::isnan(bodypart.x) || std::isinf(bodypart.x) || std::isnan(bodypart.y) || std::isinf(bodypart.y)){return false;}
+  else if(bodypart.z == 0 || bodypart.x == 0 || bodypart.y == 0 ){return false;}
   else{return true;}
 }
 
@@ -478,14 +485,14 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 									hand_skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys)));
 								}
 							}	
-							/*else
-							{
+							else
+                            {
 								if(PointISValid(humans.at(human).right_hand_key_points_with_prob.at(handkeys-1)))
 								{
-									skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys-1)));
-									skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys-1)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).right_hand_key_points_with_prob.at(handkeys)));
 								}
-							}*/
+							}
 						}
 					}
 				}
@@ -503,20 +510,20 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 						{
 							if(handkeys == 1 || handkeys == 5 || handkeys == 9 || handkeys == 13 || handkeys == 17)
 							{
-								if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(0)))
+								if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(0))&&PointISValid(humans.at(human).left_hand_key_points_with_prob.at(handkeys)))
 								{
 									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(0)));
 									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys)));
 								}
 							}	
-							/*else
+							else
 							{ 
-								if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(handkeys-1)))
+								if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(handkeys-1))&&PointISValid(humans.at(human).left_hand_key_points_with_prob.at(handkeys)))
 								{
-									skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys-1)));
-									skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys-1)));
+									hand_skeleton.points.push_back(AddPoint(humans.at(human).left_hand_key_points_with_prob.at(handkeys)));
 								}
-							}*/
+							}
 						}
 					}
 				}
@@ -688,7 +695,6 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
                 for (auto handPart = 0 ; handPart < rightHandKeypoints.getSize(1) ; handPart++)
                 {
                     openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob;
-
 					if(rightHandKeypoints[{person, handPart, 2}] < 0.1)
 					{
 		                right_hand_point_with_prob.x = NAN;
@@ -697,7 +703,6 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 		                right_hand_point_with_prob.prob = 0;
 		                human.right_hand_key_points_with_prob.at(handPart) = right_hand_point_with_prob;						
 					}
-
 					else
 					{ 
 						right_hand_point_with_prob = get3D(rightHandKeypoints[{person, handPart, 0}], rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
@@ -705,6 +710,79 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 						human.right_hand_key_points_with_prob.at(handPart) = right_hand_point_with_prob;
 					}
 				}
+                for (auto handPart = 0 ; handPart < rightHandKeypoints.getSize(1) ; handPart++)
+                {
+                    if(handPart==5||handPart==9||handPart==13||handPart==17)
+                    {
+                        openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob_check[11];
+                        double slope[10];
+                        double min_slope;
+                        int break_count=0;
+                        for (int i=0;i<11;i++)
+                        {
+                            right_hand_point_with_prob_check[i]=get3D(0.1*(10-i)*rightHandKeypoints[{person, 0, 0}]+0.1*(i)*rightHandKeypoints[{person, handPart, 0}], 0.1*(10-i)*rightHandKeypoints[{person, 0, 1}]+0.1*(i)*rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
+                            if(i>0)
+                            {
+                                slope[i-1]=right_hand_point_with_prob_check[i].z-right_hand_point_with_prob_check[i-1].z;
+                            }
+                            min_slope=slope[0];
+                            if(i>1)
+                            {
+                                if(slope[i-1]<min_slope)
+                                {
+                                    min_slope=slope[i-1];
+                                }
+                                if(abs(slope[i-1]-slope[i-2])>0.001)
+                                {
+                                    break_count++;
+                                }
+                            }
+                        }
+                        ROS_INFO("finger %d : %d",handPart,break_count);
+                        if(break_count%2)
+                        {
+                            openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob;
+                            right_hand_point_with_prob=right_hand_point_with_prob_check[handPart];
+                            right_hand_point_with_prob.z=right_hand_point_with_prob_check[0].z+min_slope*10;
+                            human.right_hand_key_points_with_prob.at(handPart)=right_hand_point_with_prob;
+                        }
+                    }
+                    if(handPart==1||handPart==4||handPart==8||handPart==12||handPart==16||handPart==20)
+                    {
+                        openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob_check[11];
+                        double slope[10];
+                        double min_slope;
+                        int break_count=0;
+                        for (int i=0;i<11;i++)
+                        {
+                            right_hand_point_with_prob_check[i]=get3D(0.1*(10-i)*rightHandKeypoints[{person, handPart-1, 0}]+0.1*(i)*rightHandKeypoints[{person, handPart, 0}], 0.1*(10-i)*rightHandKeypoints[{person, handPart-1, 1}]+0.1*(i)*rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
+                            if(i>0)
+                            {
+                                slope[i-1]=right_hand_point_with_prob_check[i].z-right_hand_point_with_prob_check[i-1].z;
+                            }
+                            min_slope=slope[0];
+                            if(i>1)
+                            {
+                                if(slope[i-1]<min_slope)
+                                {
+                                    min_slope=slope[i-1];
+                                }
+                                if(abs(slope[i-1]-slope[i-2])>0.001)
+                                {
+                                    break_count++;
+                                }
+                            }
+                        }
+                        ROS_INFO("finger %d : %d",handPart,break_count);
+                        if(break_count%2)
+                        {
+                            openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob;
+                            right_hand_point_with_prob=right_hand_point_with_prob_check[handPart];
+                            right_hand_point_with_prob.z=right_hand_point_with_prob_check[handPart-1].z+min_slope*10;
+                            human.right_hand_key_points_with_prob.at(handPart)=right_hand_point_with_prob;
+                        }
+                    }
+                }
                 human.num_right_hand_key_points_with_non_zero_prob = num_right_hand_key_points_with_non_zero_prob;
 
                 for (auto handPart = 0 ; handPart < leftHandKeypoints.getSize(1) ; handPart++)
