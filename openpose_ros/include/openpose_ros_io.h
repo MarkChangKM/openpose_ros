@@ -35,6 +35,8 @@
 // OpenPose dependencies
 #include <openpose/headers.hpp>
 
+#define PI 3.14159265
+
 namespace openpose_ros {
 
     class OpenPoseROSIO
@@ -59,7 +61,7 @@ namespace openpose_ros {
 
             bool display_output_flag_;
             bool print_keypoints_flag_;
-
+            bool initial_keypoints_length_flag_;
             bool save_original_video_flag_;
             std::string original_video_file_name_;
             bool original_video_writer_initialized_;
@@ -75,6 +77,9 @@ namespace openpose_ros {
             int video_fps_;
 
 			float fx, fy, cx, cy; // Camera Params
+
+            double body_length[24], right_hand_length[20], left_hand_length[20];
+            int  body_length_count[24], right_hand_length_count[20], left_hand_length_count[20];
 
         public:
             OpenPoseROSIO(OpenPose &openPose);
@@ -113,7 +118,9 @@ namespace openpose_ros {
 
 			openpose_ros_msgs::PointWithProb3D get3D(float, float, float);
 
-			double Average(std::vector<double> v);
+            void average_keypoints_length( const std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
+
+            void fixed_filter(const std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
 
             void stop();
     };

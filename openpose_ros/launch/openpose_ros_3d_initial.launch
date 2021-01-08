@@ -1,14 +1,14 @@
 <launch>
-  <node pkg="rosbag" type="play" name="player" args="--clock -l  -r 0.08 /home/mark/Downloads/finger_front_2.bag"/>
+  <node pkg="rosbag" type="play" name="player" args="--clock  -r 0.05 /home/mark/Downloads/arm_hand_initial_2.bag"/>
   
   <!-- Start openpose_ros -->
   <node pkg="openpose_ros" type="openpose_ros_node" name="openpose_ros_node" output="screen"> <!-- launch-prefix="valgrind" -->
     <param name="image_topic"                value="/camera/color/image_raw" />
     <param name="depth_topic"                value="/camera/aligned_depth_to_color/image_raw" />
     <param name="input_image_transport_type" value="raw" />
-    <param name="initia_keypoints_length" value="false" />
+    <param name="initial_keypoints_length" value="true" />
     <param name="output_topic"               value="/openpose_ros/human_list" />
-    <param name="display_output"             value="false" />
+    <param name="display_output"             value="true" />
     <param name="print_keypoints"            value="false" />
     <param name="save_original_video"        value="false" />
     <param name="save_openpose_video"        value="false" />

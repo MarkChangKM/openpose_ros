@@ -2,6 +2,8 @@
 
 // #define width 672
 // #define height 376
+#define low_limit 0.35
+#define high_limit 1.65
 
 using namespace openpose_ros;
 
@@ -21,6 +23,7 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
     nh_.param("input_image_transport_type", input_image_transport_type, std::string("raw"));
     nh_.param("output_topic", output_topic, std::string("/openpose_ros/human_list"));
     nh_.param("output_topic3D", output_topic3D, std::string("/openpose_ros/human_list3D"));
+    nh_.param("initial_keypoints_length",initial_keypoints_length_flag_, false);
     nh_.param("display_output", display_output_flag_, false);
     nh_.param("print_keypoints", print_keypoints_flag_, false);
     nh_.param("save_original_video", save_original_video_flag_, false);
@@ -55,6 +58,85 @@ OpenPoseROSIO::OpenPoseROSIO(OpenPose &openPose): nh_("/openpose_ros_node"), it_
 	cx = 309.006;
 	cy = 251.755;
 
+    if(initial_keypoints_length_flag_)
+    {
+        for(int i=0;i<24;i++)
+        {
+            body_length[i]=0;
+            body_length_count[i]=0;
+        }
+        for(int i=0;i<20;i++)
+        {
+            right_hand_length[i]=0;
+            right_hand_length_count[i]=0;
+            left_hand_length[i]=0;
+            left_hand_length_count[i]=0;
+        }
+    }
+    else
+    {
+        body_length[0] = 95.002332;
+        body_length[1] = 55.394687;
+        body_length[2] = 117.425972;
+        body_length[3] = 158.411135;
+        body_length[4] = 62.541936;
+        body_length[5] = 105.446824;
+        body_length[6] = 164.277537;
+        body_length[7] = 135.120735;
+        body_length[8] = 39.680924;
+        body_length[9] = 283.245640;
+        body_length[10] = 164.328128;
+        body_length[11] = 35.521555;
+        body_length[12] = 250.315422;
+        body_length[13] = 171.531229;
+        body_length[14] = 28.279884;
+        body_length[15] = 19.324606;
+        body_length[16] = 57.098838;
+        body_length[17] = 62.318739;
+        body_length[20] = 9.177181;
+        body_length[23] = 16.352296;
+        right_hand_length[0] = 27.625551;
+        right_hand_length[1] = 29.291509;
+        right_hand_length[2] = 22.267713;
+        right_hand_length[3] = 16.554714;
+        right_hand_length[4] = 64.831363;
+        right_hand_length[5] = 30.025470;
+        right_hand_length[6] = 19.577373;
+        right_hand_length[7] = 14.695464;
+        right_hand_length[8] = 61.008746;
+        right_hand_length[9] = 34.953253;
+        right_hand_length[10] = 22.510360;
+        right_hand_length[11] = 13.044445;
+        right_hand_length[12] = 52.374557;
+        right_hand_length[13] = 29.075597;
+        right_hand_length[14] = 19.253499;
+        right_hand_length[15] = 16.524868;
+        right_hand_length[16] = 45.637768;
+        right_hand_length[17] = 22.481777;
+        right_hand_length[18] = 11.187225;
+        right_hand_length[19] = 9.153362;
+        left_hand_length[0] = 22.981725;
+        left_hand_length[1] = 23.730750;
+        left_hand_length[2] = 17.434154;
+        left_hand_length[3] = 12.552293;
+        left_hand_length[4] = 59.606391;
+        left_hand_length[5] = 26.315233;
+        left_hand_length[6] = 17.487230;
+        left_hand_length[7] = 17.120222;
+        left_hand_length[8] = 60.563354;
+        left_hand_length[9] = 30.738695;
+        left_hand_length[10] = 23.190947;
+        left_hand_length[11] = 16.846322;
+        left_hand_length[12] = 58.276953;
+        left_hand_length[13] = 29.405628;
+        left_hand_length[14] = 16.919899;
+        left_hand_length[15] = 16.243797;
+        left_hand_length[16] = 51.527769;
+        left_hand_length[17] = 25.678917;
+        left_hand_length[18] = 11.877302;
+        left_hand_length[19] = 11.573453;
+    }
+    
     openpose_ = &openPose;
 
     if(save_original_video_flag_)
@@ -316,7 +398,6 @@ void OpenPoseROSIO::printKeypoints(const std::shared_ptr<std::vector<std::shared
 bool OpenPoseROSIO::PointISValid(const openpose_ros_msgs::PointWithProb3D& bodypart)
 {
   if (std::isnan(bodypart.z) || std::isinf(bodypart.z) || std::isnan(bodypart.x) || std::isinf(bodypart.x) || std::isnan(bodypart.y) || std::isinf(bodypart.y)){return false;}
-  else if(bodypart.z == 0 || bodypart.x == 0 || bodypart.y == 0 ){return false;}
   else{return true;}
 }
 
@@ -401,7 +482,7 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 					marker.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
 			        if(handkeys > 0)
 					{
-						if(handkeys == 1 || handkeys == 14 || handkeys == 15)
+						if(handkeys == 1 || handkeys == 15 || handkeys == 16)
 						{
 							if(PointISValid(humans.at(human).body_key_points_with_prob.at(0)))
 							{
@@ -411,11 +492,43 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 					
 						}
 
-						else if(handkeys == 2 || handkeys == 5 || handkeys == 8 || handkeys == 11)
+						else if(handkeys == 2 || handkeys == 5 || handkeys == 8 )
 						{
 							if(PointISValid(humans.at(human).body_key_points_with_prob.at(1)))
 							{
 								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(1)));
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
+							}
+						}	
+                        else if(handkeys == 12 || handkeys == 9 )
+						{
+							if(PointISValid(humans.at(human).body_key_points_with_prob.at(8)))
+							{
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(8)));
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
+							}
+						}	
+                        else if(handkeys == 24||handkeys == 22 )
+						{
+							if(PointISValid(humans.at(human).body_key_points_with_prob.at(11)))
+							{
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(11)));
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
+							}
+						}
+                        else if(handkeys == 21|| handkeys == 19)
+						{
+							if(PointISValid(humans.at(human).body_key_points_with_prob.at(14)))
+							{
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(14)));
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
+							}
+						}	
+                        else if(handkeys == 17|| handkeys == 18)
+						{
+							if(PointISValid(humans.at(human).body_key_points_with_prob.at(handkeys-2)))
+							{
+								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys-2)));
 								skeleton.points.push_back(AddPoint(humans.at(human).body_key_points_with_prob.at(handkeys)));
 							}
 						}	
@@ -537,18 +650,6 @@ void OpenPoseROSIO::visualize(const std::vector<openpose_ros_msgs::OpenPoseHuman
 	}
 }
 
-double OpenPoseROSIO::Average(std::vector<double> v)
-{
-	double total = 0.0;
-	double size  = 0.0;
-	for (int n = 0; n < v.size(); n++)
-	{
-		total += v[n];size++;
-	}
-
-	return total/size;
-}
-
 openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D(float x_pixel, float y_pixel, float prob)
 {
     openpose_ros_msgs::PointWithProb3D bodypart_depth;
@@ -579,6 +680,668 @@ openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D(float x_pixel, float y_p
 
 }
 
+void OpenPoseROSIO::average_keypoints_length( std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans)
+{
+    for (auto handkeys=0 ; handkeys < humans.at(0).body_key_points_with_prob.size() ; handkeys++)
+	{
+        if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 15 || handkeys == 16)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(0).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(0).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(0).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,0,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+                else if(handkeys == 2 || handkeys == 5 || handkeys == 8)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(1)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(1).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(1).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(1).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(1).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(1).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(1).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(1).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(1).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,1,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                    }
+                }
+                else if(handkeys == 12 || handkeys == 9)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(8)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(8).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(8).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(8).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(8).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(8).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(8).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(8).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(8).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,8,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+                else if(handkeys == 24 || handkeys == 22)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(11)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(11).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(11).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(11).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(11).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(11).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(11).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(11).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(11).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,11,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+                else if(handkeys == 21 || handkeys == 19)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(14)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(14).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(14).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(14).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(14).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(14).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(14).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(14).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(14).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,14,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+                else if(handkeys == 17 || handkeys == 18)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys-2)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-2).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-2).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-2).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(handkeys-2).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(handkeys-2).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-2).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-2).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-2).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,handkeys-2,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(handkeys-1).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        body_length[handkeys-1]=(body_length[handkeys-1]*body_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(body_length_count[handkeys-1]+1);
+                        body_length_count[handkeys-1]++;
+                        ROS_INFO("body %d - %d : %lf",handkeys,handkeys-1,body_length[handkeys-1]);
+                        //ROS_INFO("body %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                        //ROS_INFO("body %d: %lf",handkeys,sqrt(x*x+y*y+z*z));
+                    }
+                }
+            }
+        }
+    }
+    
+    for (auto handkeys=0 ; handkeys < humans.at(0).right_hand_key_points_with_prob.size() ; handkeys++)
+    {
+        if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 5 || handkeys == 9 || handkeys == 13 || handkeys == 17)
+                {
+                    if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).right_hand_key_points_with_prob.at(0).x, 0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).right_hand_key_points_with_prob.at(0).y, humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(0).z ;
+                        }
+                        right_hand_length[handkeys-1]=(right_hand_length[handkeys-1]*right_hand_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(right_hand_length_count[handkeys-1]+1);
+                        right_hand_length_count[handkeys-1]++;
+                        ROS_INFO("right fingers %d - %d : %lf",handkeys,0,right_hand_length[handkeys-1]);
+                        //ROS_INFO("right fingers %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y, humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        right_hand_length[handkeys-1]=(right_hand_length[handkeys-1]*right_hand_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(right_hand_length_count[handkeys-1]+1);
+                        right_hand_length_count[handkeys-1]++;
+                        ROS_INFO("right fingers %d - %d : %lf",handkeys,handkeys-1,right_hand_length[handkeys-1]);
+                        //ROS_INFO("right fingers %d: (%lf,%lf,%lf)",handkeys,x,y,z);
+                    }
+                }
+            }
+        }
+    }
+    
+    for (auto handkeys=0 ; handkeys < humans.at(0).left_hand_key_points_with_prob.size() ; handkeys++)
+    {
+        if (PointISValid(humans.at(0).left_hand_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 5 || handkeys == 9 || handkeys == 13 || handkeys == 17)
+                {
+                    if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).left_hand_key_points_with_prob.at(0).x, 0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).left_hand_key_points_with_prob.at(0).y, humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z ;
+                        }
+                        left_hand_length[handkeys-1]=(left_hand_length[handkeys-1]*left_hand_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(left_hand_length_count[handkeys-1]+1);
+                        left_hand_length_count[handkeys-1]++;
+                        ROS_INFO("left fingers %d - %d : %lf",handkeys,0,left_hand_length[handkeys-1]);
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).left_hand_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y, humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        left_hand_length[handkeys-1]=(left_hand_length[handkeys-1]*left_hand_length_count[handkeys-1]+sqrt(x*x+y*y+z*z))/(left_hand_length_count[handkeys-1]+1);
+                        left_hand_length_count[handkeys-1]++;
+                        ROS_INFO("left fingers %d - %d : %lf",handkeys,handkeys-1,left_hand_length[handkeys-1]);
+                    }
+                }
+            }
+        }
+    }
+    
+    openpose_ros_msgs::OpenPoseHumanList3D human_list_msg;
+    human_list_msg.header.stamp = ros::Time::now();
+    human_list_msg.image_header = image_header_;
+    human_list_msg.num_humans = 1;
+    human_list_msg.human_list = humans;
+    openpose_human_list_pub_3D_.publish(human_list_msg);
+	if(humans.size() > 0)
+	{
+		visualize(humans);
+	}
+}
+
+void OpenPoseROSIO::fixed_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans)
+{
+    int need_fix_count = 0;
+    for (auto handkeys=0 ; handkeys < humans.at(0).body_key_points_with_prob.size() ; handkeys++)
+	{
+        if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 15 || handkeys == 16)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(0).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(0).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(0).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                            //need_fix_count++;
+                        }
+                    }
+                }
+                else if(handkeys == 2 || handkeys == 5 || handkeys == 8)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(1)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(1).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(1).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(1).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(1).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(1).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(1).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(1).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(1).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                            //need_fix_count++;
+                        }
+                    }
+                }
+                else if(handkeys == 12 || handkeys == 9)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(8)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(8).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(8).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(8).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(8).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(8).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(8).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(8).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(8).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                           // need_fix_count++;
+                        }
+                    }
+                }
+                else if(handkeys == 24 || handkeys == 22)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(11)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(11).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(11).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(11).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(11).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(11).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(11).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(11).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(11).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                           // need_fix_count++;
+                        }
+                    }
+                }
+                else if(handkeys == 21 || handkeys == 19)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(14)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(14).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(14).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(14).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(14).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(14).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(14).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(14).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(14).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                            //need_fix_count++;
+                        }
+                    }
+                }
+                else if(handkeys == 17 || handkeys == 18)
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys-2)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-2).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-2).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-2).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(handkeys-2).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(handkeys-2).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-2).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-2).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-2).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                            //need_fix_count++;
+                        }
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).body_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>300)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).body_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).body_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).body_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).body_key_points_with_prob.at(handkeys-1).y, humans.at(0).body_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).body_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).body_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).body_key_points_with_prob.at(handkeys).x - humans.at(0).body_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).body_key_points_with_prob.at(handkeys).y - humans.at(0).body_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).body_key_points_with_prob.at(handkeys).z - humans.at(0).body_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*body_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*body_length[handkeys-1])
+                        {
+                            //need_fix_count++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    for (auto handkeys=0 ; handkeys < humans.at(0).right_hand_key_points_with_prob.size() ; handkeys++)
+    {
+        if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 5 || handkeys == 9 || handkeys == 13 || handkeys == 17)
+                {
+                    if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).right_hand_key_points_with_prob.at(0).x, 0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).right_hand_key_points_with_prob.at(0).y, humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(0).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*right_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*right_hand_length[handkeys-1])
+                        {
+                            need_fix_count++;
+                            ROS_INFO("link %d -> %d (wrong) : %lf", handkeys, 0, sqrt(x*x+y*y+z*z));
+                        }
+                        else
+                        {
+                            ROS_INFO("link %d -> %d :  %lf", handkeys, 0, sqrt(x*x+y*y+z*z));
+                        }
+                        
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).right_hand_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).right_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y, humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).right_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        if(sqrt(x*x+y*y+z*z)<low_limit*right_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*right_hand_length[handkeys-1])
+                        {
+                            need_fix_count++;
+                            ROS_INFO("link %d -> %d (wrong) : %lf", handkeys, handkeys-1, sqrt(x*x+y*y+z*z));
+                        }
+                        else
+                        {
+                            ROS_INFO("link %d -> %d : %lf", handkeys, handkeys-1, sqrt(x*x+y*y+z*z));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    openpose_ros_msgs::PointWithProb3D last_link;
+    for (auto handkeys=0 ; handkeys < humans.at(0).left_hand_key_points_with_prob.size() ; handkeys++)
+    {
+        if (PointISValid(humans.at(0).left_hand_key_points_with_prob.at(handkeys)))
+        {
+            if(handkeys > 0)
+            {
+                if(handkeys == 1 || handkeys == 5 || handkeys == 9 || handkeys == 13 || handkeys == 17)
+                {
+                    if(PointISValid(humans.at(0).left_hand_key_points_with_prob.at(0)))
+                    {
+                        double x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(0).x ;
+                        double y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(0).y ;
+                        double z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).left_hand_key_points_with_prob.at(0).x, 0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).left_hand_key_points_with_prob.at(0).y, humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(0).x ;
+                            y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(0).y ;
+                            z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z ;
+                        }
+                        last_link.x =  humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(0).x;
+                        last_link.y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(0).y;
+                        last_link.z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z;
+                        last_link.x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob;
+                        //ROS_INFO("o point angle : (%lf, %lf, %lf)",last_link.x, last_link.y, last_link.z);
+                        if(sqrt(x*x+y*y+z*z)<low_limit*left_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*left_hand_length[handkeys-1])
+                        {
+                            need_fix_count++;
+                            if((left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)<0)
+                            {
+                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = humans.at(0).left_hand_key_points_with_prob.at(0).z;
+                            }
+                            else
+                            {
+                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = -sqrt(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)+humans.at(0).left_hand_key_points_with_prob.at(0).z ;
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    if(PointISValid(humans.at(0).left_hand_key_points_with_prob.at(handkeys-1)))
+                    {
+                        double x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x ;
+                        double y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y ;
+                        double z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
+                        while(sqrt(x*x+y*y+z*z)>100)
+                        {
+                            openpose_ros_msgs::PointWithProb3D temp = get3D(0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).x+0.1*humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x, 0.9*humans.at(0).left_hand_key_points_with_prob.at(handkeys).y + 0.1*humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y, humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob);
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).x = temp.x;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).y = temp.y;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = temp.z;
+                            humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob = temp.prob;
+                            x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x ;
+                            y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y ;
+                            z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
+                        }
+                        double sita = 180-acos((x*last_link.x+y*last_link.y+z*last_link.z)/(sqrt(x*x+y*y+z*z)* sqrt(last_link.x*last_link.x+last_link.y*last_link.y+last_link.z*last_link.z)))* 180.0 / PI;
+                        if(sqrt(x*x+y*y+z*z)<low_limit*left_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*left_hand_length[handkeys-1])
+                        {
+                            need_fix_count++;
+                            if((left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)<0)
+                            {
+                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z;
+                            }
+                            else
+                            {
+                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = -sqrt(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)+humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
+                            }
+                           //ROS_INFO("z_length : %lf",(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y));
+                            //ROS_INFO("fixed point angle (%d, %d) : (%lf)",handkeys, handkeys-1, sita);
+                        }
+                        last_link.x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).x - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).x;
+                        last_link.y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y;
+                        last_link.z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z;
+                        last_link.x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob;
+                    }
+                }
+            }
+        }
+    }
+    
+    ROS_INFO("need fixed point : %d",need_fix_count);
+    openpose_ros_msgs::OpenPoseHumanList3D human_list_msg;
+    human_list_msg.header.stamp = ros::Time::now();
+    human_list_msg.image_header = image_header_;
+    human_list_msg.num_humans = 1;
+    human_list_msg.human_list = humans;
+    openpose_human_list_pub_3D_.publish(human_list_msg);
+	if(humans.size() > 0)
+	{
+		visualize(humans);
+	}
+}
+
 void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<op::Datum>>>& datumsPtr)
 {
     if (datumsPtr != nullptr && !datumsPtr->empty() && cv_depth_ptr_ != nullptr)
@@ -589,11 +1352,6 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
         const auto& rightHandKeypoints = datumsPtr->at(0)->handKeypoints[1];
         std::vector<op::Rectangle<float>>& face_rectangles = datumsPtr->at(0)->faceRectangles;
 
-        openpose_ros_msgs::OpenPoseHumanList3D human_list_msg;
-        human_list_msg.header.stamp = ros::Time::now();
-        human_list_msg.image_header = image_header_;
-        human_list_msg.num_humans = poseKeypoints.getSize(0);
-        
         std::vector<openpose_ros_msgs::OpenPoseHuman3D> human_list(poseKeypoints.getSize(0));
 
         for (auto person = 0 ; person < poseKeypoints.getSize(0) ; person++)
@@ -612,7 +1370,7 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
             {
                 openpose_ros_msgs::PointWithProb3D body_point_with_prob;
 
-                if(poseKeypoints[{person, bodyPart, 2}] < 0.1)
+                if(poseKeypoints[{person, bodyPart, 2}] < 0.05)
                 {
 					body_point_with_prob.x = NAN;
 		            body_point_with_prob.y = NAN;
@@ -710,79 +1468,6 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
 						human.right_hand_key_points_with_prob.at(handPart) = right_hand_point_with_prob;
 					}
 				}
-                for (auto handPart = 0 ; handPart < rightHandKeypoints.getSize(1) ; handPart++)
-                {
-                    if(handPart==5||handPart==9||handPart==13||handPart==17)
-                    {
-                        openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob_check[11];
-                        double slope[10];
-                        double min_slope;
-                        int break_count=0;
-                        for (int i=0;i<11;i++)
-                        {
-                            right_hand_point_with_prob_check[i]=get3D(0.1*(10-i)*rightHandKeypoints[{person, 0, 0}]+0.1*(i)*rightHandKeypoints[{person, handPart, 0}], 0.1*(10-i)*rightHandKeypoints[{person, 0, 1}]+0.1*(i)*rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
-                            if(i>0)
-                            {
-                                slope[i-1]=right_hand_point_with_prob_check[i].z-right_hand_point_with_prob_check[i-1].z;
-                            }
-                            min_slope=slope[0];
-                            if(i>1)
-                            {
-                                if(slope[i-1]<min_slope)
-                                {
-                                    min_slope=slope[i-1];
-                                }
-                                if(abs(slope[i-1]-slope[i-2])>0.001)
-                                {
-                                    break_count++;
-                                }
-                            }
-                        }
-                        ROS_INFO("finger %d : %d",handPart,break_count);
-                        if(break_count%2)
-                        {
-                            openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob;
-                            right_hand_point_with_prob=right_hand_point_with_prob_check[handPart];
-                            right_hand_point_with_prob.z=right_hand_point_with_prob_check[0].z+min_slope*10;
-                            human.right_hand_key_points_with_prob.at(handPart)=right_hand_point_with_prob;
-                        }
-                    }
-                    if(handPart==1||handPart==4||handPart==8||handPart==12||handPart==16||handPart==20)
-                    {
-                        openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob_check[11];
-                        double slope[10];
-                        double min_slope;
-                        int break_count=0;
-                        for (int i=0;i<11;i++)
-                        {
-                            right_hand_point_with_prob_check[i]=get3D(0.1*(10-i)*rightHandKeypoints[{person, handPart-1, 0}]+0.1*(i)*rightHandKeypoints[{person, handPart, 0}], 0.1*(10-i)*rightHandKeypoints[{person, handPart-1, 1}]+0.1*(i)*rightHandKeypoints[{person, handPart, 1}], rightHandKeypoints[{person, handPart, 2}]);
-                            if(i>0)
-                            {
-                                slope[i-1]=right_hand_point_with_prob_check[i].z-right_hand_point_with_prob_check[i-1].z;
-                            }
-                            min_slope=slope[0];
-                            if(i>1)
-                            {
-                                if(slope[i-1]<min_slope)
-                                {
-                                    min_slope=slope[i-1];
-                                }
-                                if(abs(slope[i-1]-slope[i-2])>0.001)
-                                {
-                                    break_count++;
-                                }
-                            }
-                        }
-                        ROS_INFO("finger %d : %d",handPart,break_count);
-                        if(break_count%2)
-                        {
-                            openpose_ros_msgs::PointWithProb3D right_hand_point_with_prob;
-                            right_hand_point_with_prob=right_hand_point_with_prob_check[handPart];
-                            right_hand_point_with_prob.z=right_hand_point_with_prob_check[handPart-1].z+min_slope*10;
-                            human.right_hand_key_points_with_prob.at(handPart)=right_hand_point_with_prob;
-                        }
-                    }
-                }
                 human.num_right_hand_key_points_with_non_zero_prob = num_right_hand_key_points_with_non_zero_prob;
 
                 for (auto handPart = 0 ; handPart < leftHandKeypoints.getSize(1) ; handPart++)
@@ -811,15 +1496,15 @@ void OpenPoseROSIO::publish3D(const std::shared_ptr<std::vector<std::shared_ptr<
             human_list.at(person) = human;
         }
 
-        human_list_msg.human_list = human_list;
-
-        openpose_human_list_pub_3D_.publish(human_list_msg);
-		
-		if(human_list.size() > 0)
-		{
-			visualize(human_list);
-		}
-
+        if(initial_keypoints_length_flag_)
+        {
+            average_keypoints_length(human_list);
+        }
+        else
+        {
+           fixed_filter(human_list);
+        }
+        
     }
     else
         op::opLog("Nullptr or empty datumsPtr found.", op::Priority::High, __LINE__, __FUNCTION__, __FILE__);
