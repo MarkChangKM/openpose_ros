@@ -1197,16 +1197,6 @@ void OpenPoseROSIO::fixed_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D>
                             y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(0).y ;
                             z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(0).z ;
                         }
-                        if(sqrt(x*x+y*y+z*z)<low_limit*right_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*right_hand_length[handkeys-1])
-                        {
-                            need_fix_count++;
-                            ROS_INFO("link %d -> %d (wrong) : %lf", handkeys, 0, sqrt(x*x+y*y+z*z));
-                        }
-                        else
-                        {
-                            ROS_INFO("link %d -> %d :  %lf", handkeys, 0, sqrt(x*x+y*y+z*z));
-                        }
-                        
                     }
                 }
                 else
@@ -1226,15 +1216,6 @@ void OpenPoseROSIO::fixed_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D>
                             x = humans.at(0).right_hand_key_points_with_prob.at(handkeys).x - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).x ;
                             y = humans.at(0).right_hand_key_points_with_prob.at(handkeys).y - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).y ;
                             z = humans.at(0).right_hand_key_points_with_prob.at(handkeys).z - humans.at(0).right_hand_key_points_with_prob.at(handkeys-1).z ;
-                        }
-                        if(sqrt(x*x+y*y+z*z)<low_limit*right_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*right_hand_length[handkeys-1])
-                        {
-                            need_fix_count++;
-                            ROS_INFO("link %d -> %d (wrong) : %lf", handkeys, handkeys-1, sqrt(x*x+y*y+z*z));
-                        }
-                        else
-                        {
-                            ROS_INFO("link %d -> %d : %lf", handkeys, handkeys-1, sqrt(x*x+y*y+z*z));
                         }
                     }
                 }
@@ -1272,18 +1253,6 @@ void OpenPoseROSIO::fixed_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D>
                         last_link.z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(0).z;
                         last_link.x = humans.at(0).left_hand_key_points_with_prob.at(handkeys).prob;
                         //ROS_INFO("o point angle : (%lf, %lf, %lf)",last_link.x, last_link.y, last_link.z);
-                        if(sqrt(x*x+y*y+z*z)<low_limit*left_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*left_hand_length[handkeys-1])
-                        {
-                            need_fix_count++;
-                            if((left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)<0)
-                            {
-                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = humans.at(0).left_hand_key_points_with_prob.at(0).z;
-                            }
-                            else
-                            {
-                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = -sqrt(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)+humans.at(0).left_hand_key_points_with_prob.at(0).z ;
-                            }
-                        }
                     }
                 }
                 else
@@ -1304,18 +1273,14 @@ void OpenPoseROSIO::fixed_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D>
                             y = humans.at(0).left_hand_key_points_with_prob.at(handkeys).y - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).y ;
                             z = humans.at(0).left_hand_key_points_with_prob.at(handkeys).z - humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
                         }
-                        double sita = 180-acos((x*last_link.x+y*last_link.y+z*last_link.z)/(sqrt(x*x+y*y+z*z)* sqrt(last_link.x*last_link.x+last_link.y*last_link.y+last_link.z*last_link.z)))* 180.0 / PI;
-                        if(sqrt(x*x+y*y+z*z)<low_limit*left_hand_length[handkeys-1] || sqrt(x*x+y*y+z*z)>high_limit*left_hand_length[handkeys-1])
+                        double thita = 180-acos((x*last_link.x+y*last_link.y+z*last_link.z)/(sqrt(x*x+y*y+z*z)* sqrt(last_link.x*last_link.x+last_link.y*last_link.y+last_link.z*last_link.z)))* 180.0 / PI;
+                        double cross_x = y*last_link.z-z*last_link.y;
+                        double cross_y = z*last_link.x-x*last_link.z;
+                        double cross_z = x*last_link.y-y*last_link.x;
+                        if((cross_x>0&&thita<140)||thita<30)
                         {
+                            ROS_INFO("link %d -> %d cross_x :  %lf , thita : %lf",handkeys-1, handkeys, cross_x, thita);
                             need_fix_count++;
-                            if((left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)<0)
-                            {
-                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z;
-                            }
-                            else
-                            {
-                                humans.at(0).left_hand_key_points_with_prob.at(handkeys).z = -sqrt(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y)+humans.at(0).left_hand_key_points_with_prob.at(handkeys-1).z ;
-                            }
                            //ROS_INFO("z_length : %lf",(left_hand_length[handkeys-1]*left_hand_length[handkeys-1]-x*x-y*y));
                             //ROS_INFO("fixed point angle (%d, %d) : (%lf)",handkeys, handkeys-1, sita);
                         }

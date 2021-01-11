@@ -1,6 +1,7 @@
 <launch>
-  <include file="$(find realsense2_camera)/launch/rs_rgbd.launch">
+  <include file="$(find realsense2_camera)/launch/rs_camera.launch">
 	<arg name="align_depth"				 value="true"/>
+	<arg name="initial_reset"				 value="true"/>
   </include>
   
   <!-- Start openpose_ros -->
