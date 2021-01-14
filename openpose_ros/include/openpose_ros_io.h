@@ -26,6 +26,8 @@
 #include <openpose_ros_msgs/OpenPoseHumanList.h>
 #include <openpose_ros_msgs/PointWithProb.h>
 #include <openpose_ros_msgs/OpenPoseHuman3D.h>
+#include <openpose_ros_msgs/OpenPoseHumanLink3D.h>
+#include <openpose_ros_msgs/OpenPoseHumanJoint3D.h>
 #include <openpose_ros_msgs/OpenPoseHumanList3D.h>
 #include <openpose_ros_msgs/PointWithProb3D.h>
 
@@ -37,6 +39,81 @@
 
 #define PI 3.14159265
 
+const int body_joint_list[25][3] = {
+{0,1,8},
+{0,1,2},
+{0,1,5},
+{2,1,5},
+{2,1,8},
+{5,1,8},
+{1,2,3},
+{2,3,4},
+{1,5,6},
+{5,6,7},
+{1,8,9},
+{1,8,12},
+{9,8,12},
+{8,9,10},
+{10,11,22},
+{11,22,23},
+{8,12,13},
+{12,13,14},
+{13,14,19},
+{14,19,20},
+{1,0,15},
+{1,0,16},
+{15,0,16},
+{0,15,17},
+{0,16,18},
+};
+const int hand_joint_list[15][3] = {
+{0,1,2},
+{1,2,3},
+{2,3,4},
+{0,5,6},
+{5,6,7},
+{6,7,8},
+{0,9,10},
+{9,10,11},
+{10,11,12},
+{0,13,14},
+{13,14,15},
+{14,15,16},
+{0,17,18},
+{17,18,19},
+{18,19,20},
+};
+const int body_link_list[22][2] = {
+{1,0},
+{2,1},
+{3,2},
+{4,3},
+{5,1},
+{6,5},
+{7,6},
+{8,1},
+{9,8},
+{10,9},
+{11,10},
+{12,8},
+{13,12},
+{14,13},
+{15,0},
+{16,0},
+{17,15},
+{18,16},
+{19,21},
+{20,19},
+{22,11},
+{23,22}
+};
+const int hand_link_list[20][2] = {
+{1,0},
+{2,1},
+{3,2},
+{4,3},
+}
+
 namespace openpose_ros {
 
     class OpenPoseROSIO
@@ -47,6 +124,7 @@ namespace openpose_ros {
             ros::Publisher openpose_human_list_pub_3D_;
 			ros::Publisher marker_pub;
 			ros::Publisher skeleton_pub;
+            ros::Publisher motor_publisher;
             image_transport::ImageTransport it_;
             image_transport::Subscriber image_sub_;
             image_transport::Subscriber depth_sub_;
@@ -78,8 +156,8 @@ namespace openpose_ros {
 
 			float fx, fy, cx, cy; // Camera Params
 
-            double body_length[24], right_hand_length[20], left_hand_length[20];
-            int  body_length_count[24], right_hand_length_count[20], left_hand_length_count[20];
+            std::vector<openpose_ros_msgs::OpenPoseHumanLink3D> last_links, links;
+            std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> last_joints, joints;
 
         public:
             OpenPoseROSIO(OpenPose &openPose);
@@ -118,9 +196,13 @@ namespace openpose_ros {
 
 			openpose_ros_msgs::PointWithProb3D get3D(float, float, float);
 
-            void average_keypoints_length( const std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
+            std::vector<openpose_ros_msgs::OpenPoseHuman3D> fixed_depth_filter(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
 
-            void fixed_filter(const std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
+            std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> cal_joints(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
+
+            std::vector<openpose_ros_msgs::OpenPoseHumanLink3D> cal_links(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
+
+            std::vector<openpose_ros_msgs::OpenPoseHuman3D> error_correction_estimator(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans);
 
             void stop();
     };

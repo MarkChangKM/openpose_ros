@@ -1,5 +1,5 @@
 <launch>
-  <node pkg="rosbag" type="play" name="player" args="--clock  -r 0.05 /home/mark/Downloads/arm_hand_initial_2.bag"/>
+  <node pkg="rosbag" type="play" name="player" args="--clock  /home/mark/Downloads/finger_front_5.bag"/>
   
   <!-- Start openpose_ros -->
   <node pkg="openpose_ros" type="openpose_ros_node" name="openpose_ros_node" output="screen"> <!-- launch-prefix="valgrind" -->

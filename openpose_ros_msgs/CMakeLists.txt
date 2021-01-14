@@ -15,14 +15,18 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake/Modules")
 
 add_message_files(
   FILES
+  joint.msg
+  jointcross.msg
+  linklength.msg
   BoundingBox.msg
   OpenPoseHuman.msg
   OpenPoseHumanList.msg
   PointWithProb.msg
   OpenPoseHuman3D.msg
+  OpenPoseHumanLink3D.msg
+  OpenPoseHumanJoint3D.msg
   OpenPoseHumanList3D.msg
   PointWithProb3D.msg
-
 )
 
 generate_messages(
