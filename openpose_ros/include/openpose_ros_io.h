@@ -39,7 +39,23 @@
 
 #define PI 3.14159265
 
-const int body_joint_list[25][3] = {
+#define body_link_var_para 0.5
+#define hand_link_var_para 0.5
+#define joint_speed 20
+#define upper_tolerance 29
+#define lower_tolerance 15
+#define joint_confidence_shift 1.7
+#define error_score_threshold 0.5
+
+#define iteration 100
+
+#define hand_keypoints 21
+#define body_joint_num 25
+#define hand_joint_num 15
+#define body_link_num 22
+#define hand_link_num 20
+
+const int body_joint_list[body_joint_num][3] = {
 {0,1,8},
 {0,1,2},
 {0,1,5},
@@ -66,7 +82,7 @@ const int body_joint_list[25][3] = {
 {0,15,17},
 {0,16,18},
 };
-const int hand_joint_list[15][3] = {
+const int hand_joint_list[hand_joint_num][3] = {
 {0,1,2},
 {1,2,3},
 {2,3,4},
@@ -83,7 +99,7 @@ const int hand_joint_list[15][3] = {
 {17,18,19},
 {18,19,20},
 };
-const int body_link_list[22][2] = {
+const int body_link_list[body_link_num][2] = {
 {1,0},
 {2,1},
 {3,2},
@@ -107,12 +123,74 @@ const int body_link_list[22][2] = {
 {22,11},
 {23,22}
 };
-const int hand_link_list[20][2] = {
+const int hand_link_list[hand_link_num][2] = {
 {1,0},
 {2,1},
 {3,2},
 {4,3},
-}
+{5,0},
+{6,5},
+{7,6},
+{8,7},
+{9,0},
+{10,9},
+{11,10},
+{12,11},
+{13,0},
+{14,13},
+{15,14},
+{16,15},
+{17,0},
+{18,17},
+{19,18},
+{20,19}
+};
+const bool hand_related_link_list[hand_keypoints][hand_link_num] = {
+{true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false, true, false, false, false},
+{true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true, true},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}
+};
+const bool hand_related_joint_list[hand_keypoints][hand_joint_num] = {
+{true, false, false, true, false, false, true, false, false, true, false, false, true, false, false},
+{true, true, false, false, false, false, false, false, false, false, false, false, false, false, false},
+{true, true, true, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, true, true, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, true, false, false, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, true, true, false, false, false, false, false, false, false, false, false, false},
+{false, false, false, true, true, true, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, true, true, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, true, false, false, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, true, true, false, false, false, false, false, false, false},
+{false, false, false, false, false, false, true, true, true, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, true, true, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, true, false, false, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, true, true, false, false, false, false},
+{false, false, false, false, false, false, false, false, false, true, true, true, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, true, true, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, true, false, false, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, true, true, false},
+{false, false, false, false, false, false, false, false, false, false, false, false, true, true, true},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, true, true},
+{false, false, false, false, false, false, false, false, false, false, false, false, false, false, true}
+};
 
 namespace openpose_ros {
 

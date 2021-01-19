@@ -1,2 +1,3 @@
 float64 angle
 jointcross cross
+float64 confidence

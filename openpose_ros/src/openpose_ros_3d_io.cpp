@@ -2,9 +2,6 @@
 
 // #define width 672
 // #define height 376
-#define low_limit 0.35
-#define high_limit 1.65
-#define iteration 100
 
 using namespace openpose_ros;
 
@@ -606,8 +603,83 @@ openpose_ros_msgs::PointWithProb3D OpenPoseROSIO::get3D(float x_pixel, float y_p
 
 std::vector<openpose_ros_msgs::OpenPoseHuman3D> OpenPoseROSIO::error_correction_estimator(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans)
 {
-    
-    return(humans);
+    for(auto human = 0 ; human < humans.size() ; human++)
+    {
+        bool right_hand_error_keypoints[hand_keypoints];
+        bool left_hand_error_keypoints[hand_keypoints];
+
+        for(int handkey=0 ; handkey < hand_keypoints ; handkey++)
+        {
+            int left_score_cal_count = 0;
+            double left_error_score = 1;
+            int right_score_cal_count = 0;
+            double right_error_score = 1;
+            //check hand error
+            for(int link_num = 0 ; link_num<hand_link_num ; link_num++)
+            {
+                if(hand_related_link_list[handkey][link_num] && links.at(human).left_hand.at(link_num).confidence!=-1 && !std::isnan(links.at(human).left_hand.at(link_num).confidence))
+                {
+                    left_error_score = left_error_score * links.at(human).left_hand.at(link_num).confidence;
+                    left_score_cal_count++;
+                }
+                if(hand_related_link_list[handkey][link_num] && links.at(human).right_hand.at(link_num).confidence!=-1 && !std::isnan(links.at(human).right_hand.at(link_num).confidence))
+                {
+                    right_error_score = right_error_score * links.at(human).right_hand.at(link_num).confidence;
+                    right_score_cal_count++;
+                }
+            }
+            for(int joint_num = 0 ; joint_num<hand_joint_num ; joint_num++)
+            {
+                if(hand_related_joint_list[handkey][joint_num] && joints.at(human).left_hand.at(joint_num).confidence!=-1 && !std::isnan(joints.at(human).left_hand.at(joint_num).confidence))
+                {
+                    left_error_score = left_error_score * joints.at(human).left_hand.at(joint_num).confidence;
+                    left_score_cal_count++;
+                }
+                if(hand_related_joint_list[handkey][joint_num] && joints.at(human).right_hand.at(joint_num).confidence!=-1 && !std::isnan(joints.at(human).right_hand.at(joint_num).confidence))
+                {
+                    right_error_score = right_error_score * joints.at(human).right_hand.at(joint_num).confidence;
+                    right_score_cal_count++;
+                }
+            }
+
+            if(pow(left_error_score, 1./left_score_cal_count)<error_score_threshold)
+            {
+                left_hand_error_keypoints[handkey] = true;
+            }
+            else
+            {
+                left_hand_error_keypoints[handkey] = false;
+            }
+            //ROS_INFO("left hand keypoint %d error score : %lf",handkey,left_error_score);
+
+            if(left_hand_error_keypoints[handkey])
+            {
+                ROS_INFO("left hand keypoint %d error",handkey);
+            }
+
+            if(pow(right_error_score, 1./right_score_cal_count)<error_score_threshold)
+            {
+                right_hand_error_keypoints[handkey] = true;
+            }
+            else
+            {
+                right_hand_error_keypoints[handkey] = false;
+            }
+            //ROS_INFO("right hand keypoint %d error score : %lf",handkey,right_error_score);
+
+            if(right_hand_error_keypoints[handkey])
+            {
+                ROS_INFO("right hand keypoint %d error",handkey);
+            }
+        }
+        
+        for(int handkey=0 ; handkey < hand_keypoints ; handkey++)
+        {
+            
+        }
+        
+        return(humans);
+    }
 }
 
 std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> OpenPoseROSIO::cal_joints(std::vector<openpose_ros_msgs::OpenPoseHuman3D> humans)
@@ -615,20 +687,144 @@ std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> OpenPoseROSIO::cal_joints(s
     std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> joint(humans.size());
     for(auto human = 0 ; human < humans.size() ; human++)
     {
-        for (auto handkeys=0 ; handkeys < humans.at(human).body_key_points_with_prob.size() ; handkeys++)
+        for(int i=0 ; i<body_joint_num ; i++)
         {
-            if(PointISValid(humans.at(human).body_key_points_with_prob.at(handkeys)))
+            if(PointISValid(humans.at(human).body_key_points_with_prob.at(body_joint_list[i][0])) && PointISValid(humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1])) && PointISValid(humans.at(human).body_key_points_with_prob.at(body_joint_list[i][2])))
             {
-                if(handkeys > 0)
+                double x1 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).x - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][0]).x;
+                double x2 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).x - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][2]).x;
+                double y1 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).y - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][0]).y;
+                double y2 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).y - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][2]).y;
+                double z1 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).z - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][0]).z;
+                double z2 = humans.at(human).body_key_points_with_prob.at(body_joint_list[i][1]).z - humans.at(human).body_key_points_with_prob.at(body_joint_list[i][2]).z;
+                joint.at(human).body.at(i).cross.x = y1*z2-z1*y2;
+                joint.at(human).body.at(i).cross.y = z1*x2-x1*z2;
+                joint.at(human).body.at(i).cross.z = x1*y2-y1*x2;
+                joint.at(human).body.at(i).angle = acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI;
+                //ROS_INFO("body joint %d-%d-%d angle : %lf cross : (%lf,%lf,%lf)", body_joint_list[i][0], body_joint_list[i][1], body_joint_list[i][2], joint.at(human).body.at(i).angle, joint.at(human).body.at(i).cross.x, joint.at(human).body.at(i).cross.y ,joint.at(human).body.at(i).cross.z);
+                if(last_joints.size()==0 || last_joints.at(human).body.at(i).confidence==-1 || std::isnan(last_joints.at(human).body.at(i).confidence))
                 {
-                    if(handkeys == 1 || handkeys == 15 || handkeys == 16)
-                    {
-                        if(PointISValid(humans.at(human).body_key_points_with_prob.at(0)))
-                        {
-
-                        }
-                    }
+                    joint.at(human).body.at(i).confidence = 1;
                 }
+                else
+                {
+                    x1 = joint.at(human).body.at(i).cross.x;
+                    y1 = joint.at(human).body.at(i).cross.y;
+                    z1 = joint.at(human).body.at(i).cross.z;
+                    x2 = last_joints.at(human).body.at(i).cross.x;
+                    y2 = last_joints.at(human).body.at(i).cross.y;
+                    z2 = last_joints.at(human).body.at(i).cross.z;
+                    double x;
+                    if(acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI > 120)
+                    {
+                        x = 360 - joint.at(human).body.at(i).angle - last_joints.at(human).body.at(i).angle;
+                    }
+                    else
+                    {
+                        x = abs(joint.at(human).body.at(i).angle - last_joints.at(human).body.at(i).angle);
+                    }
+                    double b = lower_tolerance + (1-last_joints.at(human).body.at(i).confidence)*(upper_tolerance-lower_tolerance);
+                    joint.at(human).body.at(i).confidence = 0.5*(1-erf((x-joint_speed)/b-joint_confidence_shift));
+                }
+                //ROS_INFO("body joint confidence %d to %d to %d : %lf%%", body_joint_list[i][0], body_joint_list[i][1], body_joint_list[i][2], joint.at(human).body.at(i).confidence*100);
+            }
+            else
+            {
+                joint.at(human).body.at(i).confidence = -1;
+            }
+        }
+
+        for(int i=0 ; i<hand_joint_num ; i++)
+        {
+            if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][0])) && PointISValid(humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1])) && PointISValid(humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][2])))
+            {
+                double x1 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).x - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][0]).x;
+                double x2 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).x - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][2]).x;
+                double y1 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).y - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][0]).y;
+                double y2 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).y - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][2]).y;
+                double z1 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).z - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][0]).z;
+                double z2 = humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][1]).z - humans.at(human).left_hand_key_points_with_prob.at(hand_joint_list[i][2]).z;
+                joint.at(human).left_hand.at(i).cross.x = y1*z2-z1*y2;
+                joint.at(human).left_hand.at(i).cross.y = z1*x2-x1*z2;
+                joint.at(human).left_hand.at(i).cross.z = x1*y2-y1*x2;
+                joint.at(human).left_hand.at(i).angle = acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI;
+                //ROS_INFO("left hand joint %d-%d-%d angle : %lf cross : (%lf,%lf,%lf)", hand_joint_list[i][0], hand_joint_list[i][1], hand_joint_list[i][2], joint.at(human).left_hand.at(i).angle, joint.at(human).left_hand.at(i).cross.x, joint.at(human).left_hand.at(i).cross.y ,joint.at(human).left_hand.at(i).cross.z);
+                if(last_joints.size()==0 || last_joints.at(human).left_hand.at(i).confidence==-1 || std::isnan(last_joints.at(human).left_hand.at(i).confidence))
+                {
+                    joint.at(human).left_hand.at(i).confidence = 1;
+                }
+                else
+                {
+                    x1 = joint.at(human).left_hand.at(i).cross.x;
+                    y1 = joint.at(human).left_hand.at(i).cross.y;
+                    z1 = joint.at(human).left_hand.at(i).cross.z;
+                    x2 = last_joints.at(human).left_hand.at(i).cross.x;
+                    y2 = last_joints.at(human).left_hand.at(i).cross.y;
+                    z2 = last_joints.at(human).left_hand.at(i).cross.z;
+                    double x;
+                    if(acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI > 120)
+                    {
+                        x = 360 - joint.at(human).left_hand.at(i).angle - last_joints.at(human).left_hand.at(i).angle;
+                    }
+                    else
+                    {
+                        x = abs(joint.at(human).left_hand.at(i).angle - last_joints.at(human).left_hand.at(i).angle);
+                    }
+                    double b = lower_tolerance + (1-last_joints.at(human).left_hand.at(i).confidence)*(upper_tolerance-lower_tolerance);
+                    joint.at(human).left_hand.at(i).confidence = 0.5*(1-erf((x-joint_speed)/b-joint_confidence_shift));
+                }
+                //ROS_INFO("left hand joint confidence %d to %d to %d : %lf%%", hand_joint_list[i][0], hand_joint_list[i][1], hand_joint_list[i][2], joint.at(human).left_hand.at(i).confidence*100);
+            }
+            else
+            {
+                joint.at(human).left_hand.at(i).confidence = -1;
+            }
+        }
+
+        for(int i=0 ; i<hand_joint_num ; i++)
+        {
+            if(PointISValid(humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][0])) && PointISValid(humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1])) && PointISValid(humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][2])))
+            {
+                double x1 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).x - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][0]).x;
+                double x2 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).x - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][2]).x;
+                double y1 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).y - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][0]).y;
+                double y2 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).y - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][2]).y;
+                double z1 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).z - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][0]).z;
+                double z2 = humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][1]).z - humans.at(human).right_hand_key_points_with_prob.at(hand_joint_list[i][2]).z;
+                joint.at(human).right_hand.at(i).cross.x = y1*z2-z1*y2;
+                joint.at(human).right_hand.at(i).cross.y = z1*x2-x1*z2;
+                joint.at(human).right_hand.at(i).cross.z = x1*y2-y1*x2;
+                joint.at(human).right_hand.at(i).angle = acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI;
+                //ROS_INFO("right hand joint %d-%d-%d angle : %lf cross : (%lf,%lf,%lf)", hand_joint_list[i][0], hand_joint_list[i][1], hand_joint_list[i][2], joint.at(human).right_hand.at(i).angle, joint.at(human).right_hand.at(i).cross.x, joint.at(human).right_hand.at(i).cross.y ,joint.at(human).right_hand.at(i).cross.z);
+                if(last_joints.size()==0 || last_joints.at(human).right_hand.at(i).confidence==-1 || std::isnan(last_joints.at(human).right_hand.at(i).confidence))
+                {
+                    joint.at(human).right_hand.at(i).confidence = 1;
+                }
+                else
+                {
+                    x1 = joint.at(human).right_hand.at(i).cross.x;
+                    y1 = joint.at(human).right_hand.at(i).cross.y;
+                    z1 = joint.at(human).right_hand.at(i).cross.z;
+                    x2 = last_joints.at(human).right_hand.at(i).cross.x;
+                    y2 = last_joints.at(human).right_hand.at(i).cross.y;
+                    z2 = last_joints.at(human).right_hand.at(i).cross.z;
+                    double x;
+                    if(acos((x1*x2+y1*y2+z1*z2) / sqrt(x1*x1+y1*y1+z1*z1) / sqrt(x2*x2+y2*y2+z2*z2)) * 180.0 / PI > 120)
+                    {
+                        x = 360 - joint.at(human).right_hand.at(i).angle - last_joints.at(human).right_hand.at(i).angle;
+                    }
+                    else
+                    {
+                        x = abs(joint.at(human).right_hand.at(i).angle - last_joints.at(human).right_hand.at(i).angle);
+                    }
+                    double b = lower_tolerance + (1-last_joints.at(human).right_hand.at(i).confidence)*(upper_tolerance-lower_tolerance);
+                    joint.at(human).right_hand.at(i).confidence = 0.5*(1-erf((x-joint_speed)/b-joint_confidence_shift));
+                }
+                //ROS_INFO("right hand joint confidence %d to %d to %d : %lf%%", hand_joint_list[i][0], hand_joint_list[i][1], hand_joint_list[i][2], joint.at(human).right_hand.at(i).confidence*100);
+            }
+            else
+            {
+                joint.at(human).right_hand.at(i).confidence = -1;
             }
         }
     }
@@ -640,20 +836,75 @@ std::vector<openpose_ros_msgs::OpenPoseHumanLink3D> OpenPoseROSIO::cal_links(std
     std::vector<openpose_ros_msgs::OpenPoseHumanLink3D> link(humans.size());
     for(auto human = 0 ; human < humans.size() ; human++)
     {
-        for (auto handkeys=0 ; handkeys < humans.at(human).body_key_points_with_prob.size() ; handkeys++)
+        for(int i=0 ; i<body_link_num ; i++)
         {
-            if(PointISValid(humans.at(human).body_key_points_with_prob.at(handkeys)))
+            if(PointISValid(humans.at(human).body_key_points_with_prob.at(body_link_list[i][0]))&&PointISValid(humans.at(human).body_key_points_with_prob.at(body_link_list[i][1])))
             {
-                if(handkeys > 0)
+                link.at(human).body.at(i).length = sqrt(pow(humans.at(human).body_key_points_with_prob.at(body_link_list[i][0]).x - humans.at(human).body_key_points_with_prob.at(body_link_list[i][1]).x,2)
+                                                        +pow(humans.at(human).body_key_points_with_prob.at(body_link_list[i][0]).y - humans.at(human).body_key_points_with_prob.at(body_link_list[i][1]).y,2)
+                                                        +pow(humans.at(human).body_key_points_with_prob.at(body_link_list[i][0]).z - humans.at(human).body_key_points_with_prob.at(body_link_list[i][1]).z,2));
+                //ROS_INFO("body link length %d to %d : %lf", body_link_list[i][0], body_link_list[i][1], link.at(human).body.at(i).length);
+                if(!(last_links.size()==0 || last_links.at(human).body.at(i).confidence==-1))
                 {
-                    if(handkeys == 1 || handkeys == 15 || handkeys == 16)
-                    {
-                        if(PointISValid(humans.at(human).body_key_points_with_prob.at(0)))
-                        {
-
-                        }
-                    }
+                    link.at(human).body.at(i).confidence = exp(-0.5*pow(((link.at(human).body.at(i).length-last_links.at(human).body.at(i).length)/(last_links.at(human).body.at(i).length*body_link_var_para/last_links.at(human).body.at(i).confidence)),2));
                 }
+                else
+                {
+                    link.at(human).body.at(i).confidence = 1;
+                }
+                //ROS_INFO("body link confidence %d to %d : %lf%%", body_link_list[i][0], body_link_list[i][1], link.at(human).body.at(i).confidence*100);
+            }
+            else
+            {
+                link.at(human).body.at(i).confidence = -1;
+            }
+        }
+        
+        for(int i=0 ; i<hand_link_num ; i++)
+        {
+            if(PointISValid(humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][0]))&&PointISValid(humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][1])))
+            {
+                link.at(human).left_hand.at(i).length = sqrt(pow(humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][0]).x - humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][1]).x,2)
+                                                            +pow(humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][0]).y - humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][1]).y,2)
+                                                            +pow(humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][0]).z - humans.at(human).left_hand_key_points_with_prob.at(hand_link_list[i][1]).z,2));
+                //ROS_INFO("hand link length %d to %d : %lf", hand_link_list[i][0], hand_link_list[i][1], link.at(human).left_hand.at(i).length);
+                if(!(last_links.size()==0 || last_links.at(human).left_hand.at(i).confidence==-1))
+                {
+                    link.at(human).left_hand.at(i).confidence = exp(-0.5*pow(((link.at(human).left_hand.at(i).length-last_links.at(human).left_hand.at(i).length)/(last_links.at(human).left_hand.at(i).length*hand_link_var_para/last_links.at(human).left_hand.at(i).confidence)),2));
+                }
+                else
+                {
+                    link.at(human).left_hand.at(i).confidence = 1;
+                }
+                //ROS_INFO("left hand link confidence %d to %d : %lf%%", hand_link_list[i][0], hand_link_list[i][1], link.at(human).left_hand.at(i).confidence*100);
+            }
+            else
+            {
+                link.at(human).left_hand.at(i).confidence = -1;
+            }
+        }
+
+        for(int i=0 ; i<hand_link_num ; i++)
+        {
+            if(PointISValid(humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][0]))&&PointISValid(humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][1])))
+            {
+                link.at(human).right_hand.at(i).length = sqrt(pow(humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][0]).x - humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][1]).x,2)
+                                                            +pow(humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][0]).y - humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][1]).y,2)
+                                                            +pow(humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][0]).z - humans.at(human).right_hand_key_points_with_prob.at(hand_link_list[i][1]).z,2));
+                //ROS_INFO("hand link length %d to %d : %lf", hand_link_list[i][0], hand_link_list[i][1], link.at(human).right_hand.at(i).length);
+                if(!(last_links.size()==0 || last_links.at(human).right_hand.at(i).confidence==-1))
+                {
+                    link.at(human).right_hand.at(i).confidence = exp(-0.5*pow(((link.at(human).right_hand.at(i).length-last_links.at(human).right_hand.at(i).length)/(last_links.at(human).right_hand.at(i).length*hand_link_var_para/last_links.at(human).right_hand.at(i).confidence)),2));
+                }
+                else
+                {
+                    link.at(human).right_hand.at(i).confidence = 1;
+                }
+                //ROS_INFO("right hand link confidence %d to %d : %lf%%", hand_link_list[i][0], hand_link_list[i][1], link.at(human).right_hand.at(i).confidence*100);
+            }
+            else
+            {
+                link.at(human).right_hand.at(i).confidence = -1;
             }
         }
     }

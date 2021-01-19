@@ -17,7 +17,7 @@ OpenPose::OpenPose() : outputSize(op::flagsToPoint(op::String(FLAGS_output_resol
                        handDetector(op::flagsToDetector(FLAGS_hand_detector)),
                        enableGoogleLogging(true),
                        opWrapper(op::ThreadManagerMode::Asynchronous),
-                       wrapperStructPose(poseMode, netInputSize, outputSize, keypointScaleMode, FLAGS_num_gpu, FLAGS_num_gpu_start,
+                       wrapperStructPose(poseMode, netInputSize, FLAGS_net_resolution_dynamic, outputSize, keypointScaleMode, FLAGS_num_gpu, FLAGS_num_gpu_start,
                                          FLAGS_scale_number, (float)FLAGS_scale_gap, op::flagsToRenderMode(FLAGS_render_pose, multipleView),
                                          poseModel, !FLAGS_disable_blending, (float)FLAGS_alpha_pose, (float)FLAGS_alpha_heatmap,
                                          FLAGS_part_to_show, op::String(FLAGS_model_folder), heatMapTypes, heatMapScaleMode, FLAGS_part_candidates,
@@ -38,7 +38,7 @@ OpenPose::OpenPose() : outputSize(op::flagsToPoint(op::String(FLAGS_output_resol
                                            op::String(FLAGS_write_heatmaps), op::String(FLAGS_write_heatmaps_format), op::String(FLAGS_write_video_3d),
                                            op::String(FLAGS_write_video_adam), op::String(FLAGS_write_bvh), op::String(FLAGS_udp_host),
                                            op::String(FLAGS_udp_port))
-                       // wrapperStructGui(op::flagsToDisplayMode(FLAGS_display, FLAGS_3d), !FLAGS_no_gui_verbose, FLAGS_fullscreen)
+                       //wrapperStructGui(op::flagsToDisplayMode(FLAGS_display, FLAGS_3d), !FLAGS_no_gui_verbose, FLAGS_fullscreen)
 
 
 {
@@ -62,7 +62,7 @@ OpenPose::OpenPose() : outputSize(op::flagsToPoint(op::String(FLAGS_output_resol
     opWrapper.configure(wrapperStructFace);
     opWrapper.configure(wrapperStructHand);
     opWrapper.configure(wrapperStructExtra);
-    opWrapper.configure(wrapperStructOutput);
+    //opWrapper.configure(wrapperStructOutput);
     // opWrapper.configure(wrapperStructGui);
 
     // Set to single-thread running (to debug and/or reduce latency)

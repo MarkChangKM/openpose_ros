@@ -15,7 +15,7 @@ DEFINE_int32(profile_speed,             1000,           "If PROFILER_ENABLED was
                                                         " runtime statistics at this frame number.");
 #ifndef OPENPOSE_FLAGS_DISABLE_POSE
 // OpenPose
-DEFINE_string(model_folder,             "/home/mark/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
+DEFINE_string(model_folder,             "/home/markchang/openpose/models/",      "Folder path (absolute or relative) where the models (pose, face, ...) are located.");
 DEFINE_string(prototxt_path,            "",             "The combination `--model_folder` + `--prototxt_path` represents the whole path to the"
                                                         " prototxt file. If empty, it will use the default OpenPose ProtoTxt file.");
 DEFINE_string(caffemodel_path,          "",             "The combination `--model_folder` + `--caffemodel_path` represents the whole path to the"
@@ -52,12 +52,19 @@ DEFINE_int32(body,                      1,              "Select 0 to disable bod
 DEFINE_string(model_pose,               "BODY_25",      "Model to be used. E.g., `BODY_25` (fastest for CUDA version, most accurate, and includes"
                                                         " foot keypoints), `COCO` (18 keypoints), `MPI` (15 keypoints, least accurate model but"
                                                         " fastest on CPU), `MPI_4_layers` (15 keypoints, even faster but less accurate).");
-DEFINE_string(net_resolution,           "224x128",       "Multiples of 16. If it is increased, the accuracy potentially increases. If it is"
+DEFINE_string(net_resolution,           "480x368",       "Multiples of 16. If it is increased, the accuracy potentially increases. If it is"
                                                         " decreased, the speed increases. For maximum speed-accuracy balance, it should keep the"
                                                         " closest aspect ratio possible to the images or videos to be processed. Using `-1` in"
                                                         " any of the dimensions, OP will choose the optimal aspect ratio depending on the user's"
                                                         " input value. E.g., the default `-1x368` is equivalent to `656x368` in 16:9 resolutions,"
                                                         " e.g., full HD (1980x1080) and HD (21280x720) resolutions.");
+DEFINE_double(net_resolution_dynamic,   1.,             "This flag only applies to images or custom inputs (not to video or webcam). If it is zero"
+                                                        " or a negative value, it means that using `-1` in `net_resolution` will behave as explained"
+                                                        " in its description. Otherwise, and to avoid out of memory errors, the `-1` in"
+                                                        " `net_resolution` will clip to this value times the default 16/9 aspect ratio value (which"
+                                                        " is 656 width for a 368 height). E.g., `net_resolution_dynamic 10 net_resolution -1x368`"
+                                                        " will clip to 6560x368 (10 x 656). Recommended 1 for small GPUs (to avoid out of memory"
+                                                        " errors but maximize speed) and 0 for big GPUs (for maximum accuracy and speed).");
 DEFINE_int32(scale_number,              1,              "Number of scales to average.");
 DEFINE_double(scale_gap,                0.25,           "Scale gap between scales. No effect unless scale_number > 1. Initial scale is always 1."
                                                         " If you want to change the initial scale, you actually want to multiply the"
@@ -104,7 +111,7 @@ DEFINE_bool(hand,                       true,          "Enables hand keypoint de
                                                         " `model_folder`. Analogously to `--face`, it will also slow down the performance, increase"
                                                         " the required GPU memory and its speed depends on the number of people.");
 DEFINE_int32(hand_detector,             0,              "Kind of hand rectangle detector. Analogous to `--face_detector`.");
-DEFINE_string(hand_net_resolution,      "224x224",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the hand keypoint"
+DEFINE_string(hand_net_resolution,      "320x320",      "Multiples of 16 and squared. Analogous to `net_resolution` but applied to the hand keypoint"
                                                         " detector.");
 DEFINE_int32(hand_scale_number,         2,              "Analogous to `scale_number` but applied to the hand keypoint detector. Our best results"
                                                         " were found with `hand_scale_number` = 6 and `hand_scale_range` = 0.4.");
