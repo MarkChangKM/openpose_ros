@@ -45,9 +45,16 @@
 #define upper_tolerance 29
 #define lower_tolerance 15
 #define joint_confidence_shift 1.7
-#define error_score_threshold 0.5
+#define error_score_threshold 0.75
 
-#define iteration 100
+#define optimizer_threshold 0.1
+#define max_iteration 1000
+#define grad_cal_rate 0.1
+#define learning_rate 10000
+#define beta1 0.9
+#define beta2 0.999
+#define eta 1
+#define epsilon 1e-8
 
 #define hand_keypoints 21
 #define body_joint_num 25
@@ -236,6 +243,7 @@ namespace openpose_ros {
 
             std::vector<openpose_ros_msgs::OpenPoseHumanLink3D> last_links, links;
             std::vector<openpose_ros_msgs::OpenPoseHumanJoint3D> last_joints, joints;
+            std::vector<openpose_ros_msgs::OpenPoseHuman3D> last_human_list;
 
         public:
             OpenPoseROSIO(OpenPose &openPose);
